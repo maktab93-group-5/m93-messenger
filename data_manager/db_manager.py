@@ -62,11 +62,28 @@ class DBManager(BaseManager):
 
 
     def update(self, m: BaseModel) -> None:
-        assert getattr(m, '_id', None)
-        # m.to_dict()
-        # m.TABLE_NAME
-        "UPDATE tablename x WHERE x, SET y"
-
+        assert getattr(m, '_id', None), "NO ID exists"
+        # UPDATE t
+        # SET
+        # c1 = new_value,
+        # c2 = new_value2
+        # WHERE condition;
+        
+        converter = lambda x: f"'{x}'" if isinstance(x, str) else str(x)
+        
+        fresh_data = m.to_dict() # {'_id':1, 'username':'akbar', ...}
+        id = fresh_data.pop('_id')
+        query = f"UPDATE {m.__class__.TABLE_NAME} SET "
+        for k, v in fresh_data.items():
+            query += f"{k} = {converter(v)}" + ','
+        query += f"WHERE _id = %s ;"
+        
+        print(query)
+         
+        with self.__conn.cursor() as cur:
+            cur.execute(query, (id, ))
+            
+        self.__conn.commit()
 
     def delete(self, id: int, model_cls: type) -> None:
         pass
